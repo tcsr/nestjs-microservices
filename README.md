@@ -1,4 +1,4 @@
-# react19-microservices
+# nestjs-microservices
 
 Event-driven **e-commerce microservices** on **NestJS + Kafka** (monorepo). Built as
 a learning source of truth: every microservices concept is demonstrated in running
