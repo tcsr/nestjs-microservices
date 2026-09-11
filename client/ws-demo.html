@@ -1,0 +1,50 @@
+<!doctype html>
+<!--
+  Minimal demo client: place an order (HTTP POST /checkout) and watch the final
+  status arrive live over WebSocket (orderStatus event). Open this file in a browser
+  while `npm run start:all` + Kafka are running.
+-->
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Microservices checkout demo</title>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <style>
+      body { font-family: system-ui; max-width: 640px; margin: 40px auto; }
+      button { padding: 8px 14px; }
+      #log { margin-top: 16px; padding: 12px; background: #111; color: #0f0; min-height: 160px; white-space: pre-wrap; border-radius: 6px; }
+    </style>
+  </head>
+  <body>
+    <h2>Checkout (microservices saga)</h2>
+    <button onclick="checkout(false)">Place order (succeeds)</button>
+    <button onclick="checkout(true)">Place order (payment fails → compensation)</button>
+    <div id="log"></div>
+
+    <script>
+      const API = 'http://localhost:3000';
+      const log = (m) => (document.getElementById('log').textContent += m + '\n');
+
+      // Live status pushed by the gateway when the saga finishes.
+      const socket = io(API);
+      socket.on('connect', () => log('WS connected'));
+      socket.on('orderStatus', (s) =>
+        log(`orderStatus: ${s.orderId} -> ${s.status}${s.reason ? ' (' + s.reason + ')' : ''}`),
+      );
+
+      async function checkout(fail) {
+        // p3 is priced high enough (x3) to exceed the payment limit -> failure path.
+        const items = fail
+          ? [{ productId: 'p3', quantity: 3 }]
+          : [{ productId: 'p1', quantity: 1 }, { productId: 'p2', quantity: 2 }];
+        const res = await fetch(`${API}/checkout`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ customerId: 'c1', items }),
+        });
+        const body = await res.json();
+        log(`POST /checkout -> ${res.status} ${JSON.stringify(body)}`);
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,43 @@
+# Local infra for the microservices. Services run on the host (npm run start:all);
+# this provides the Kafka broker they talk through.
+#   docker compose up -d          # start Kafka (+ UI)
+#   npm run start:all             # start all 5 Nest services
+services:
+  kafka:
+    image: bitnami/kafka:3.7
+    container_name: msvc_kafka
+    ports:
+      - '9092:9092' # host apps connect here (advertised as localhost:9092)
+    environment:
+      # KRaft mode (no ZooKeeper): this node is both controller and broker.
+      KAFKA_CFG_NODE_ID: '0'
+      KAFKA_CFG_PROCESS_ROLES: controller,broker
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@kafka:9093
+      # Two data listeners: PLAINTEXT for host apps (localhost:9092), INTERNAL for
+      # other containers on the compose network (kafka:9094).
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,INTERNAL://:9094
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,INTERNAL://kafka:9094
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,INTERNAL:PLAINTEXT
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: INTERNAL
+      # Auto-create topics on first publish (fine for dev; disable in prod and
+      # provision topics with explicit partition/replication settings).
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      ALLOW_PLAINTEXT_LISTENER: 'yes'
+    volumes:
+      - kafka_data:/bitnami/kafka
+
+  # Web UI to inspect topics/partitions/consumer-groups/messages (great for learning).
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: msvc_kafka_ui
+    ports:
+      - '8080:8080' # http://localhost:8080
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9094
+    depends_on:
+      - kafka
+
+volumes:
+  kafka_data:

@@ -1,0 +1,47 @@
+{
+  "compilerOptions": {
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "resolvePackageJsonExports": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2023",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "incremental": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "strictPropertyInitialization": false,
+    "paths": {
+      "@app/contracts": ["./libs/contracts/src/index.ts"],
+      "@app/contracts/*": ["./libs/contracts/src/*"]
+    },
+    "types": [
+      "vitest/globals",
+      "node"
+    ]
+  },
+  "files": [],
+  "references": [
+    {
+      "path": "./apps/gateway/tsconfig.app.json"
+    },
+    {
+      "path": "./apps/products/tsconfig.app.json"
+    },
+    {
+      "path": "./apps/orders/tsconfig.app.json"
+    },
+    {
+      "path": "./apps/inventory/tsconfig.app.json"
+    },
+    {
+      "path": "./apps/payment/tsconfig.app.json"
+    }
+  ]
+}
