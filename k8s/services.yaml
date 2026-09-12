@@ -1,0 +1,114 @@
+# Kubernetes manifests for the microservices (illustrative; apply to a cluster with
+# a Kafka reachable at the `kafka:9092` Service). Build + push images first, e.g.
+#   docker build --build-arg APP=gateway -t <registry>/msvc-gateway:latest .
+# then `kubectl apply -f k8s/`.
+#
+# Pattern: one Deployment per service (independently scalable), a Service + HPA for
+# the gateway (the only one with inbound HTTP), and shared config via env.
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: msvc-config
+data:
+  KAFKA_BROKER: 'kafka:9092' # a Kafka Service in the cluster
+---
+# Gateway — HTTP entrypoint (exposed via Service + would sit behind an Ingress).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: gateway } }
+  template:
+    metadata: { labels: { app: gateway } }
+    spec:
+      containers:
+        - name: gateway
+          image: REGISTRY/msvc-gateway:latest
+          ports: [{ containerPort: 3000 }]
+          envFrom: [{ configMapRef: { name: msvc-config } }]
+          env: [{ name: PORT, value: '3000' }]
+          readinessProbe: { httpGet: { path: /metrics, port: 3000 }, initialDelaySeconds: 10 }
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits: { cpu: 500m, memory: 512Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway
+spec:
+  selector: { app: gateway }
+  ports: [{ port: 80, targetPort: 3000 }]
+---
+# Autoscale the gateway on CPU (HPA). Kafka consumers scale up to the partition count.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: gateway
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: gateway }
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource: { name: cpu, target: { type: Utilization, averageUtilization: 70 } }
+---
+# The four Kafka-only workers — no Service (they only consume/produce events).
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: products }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: products } }
+  template:
+    metadata: { labels: { app: products } }
+    spec:
+      containers:
+        - name: products
+          image: REGISTRY/msvc-products:latest
+          envFrom: [{ configMapRef: { name: msvc-config } }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: orders }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: orders } }
+  template:
+    metadata: { labels: { app: orders } }
+    spec:
+      containers:
+        - name: orders
+          image: REGISTRY/msvc-orders:latest
+          envFrom: [{ configMapRef: { name: msvc-config } }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: inventory }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: inventory } }
+  template:
+    metadata: { labels: { app: inventory } }
+    spec:
+      containers:
+        - name: inventory
+          image: REGISTRY/msvc-inventory:latest
+          envFrom: [{ configMapRef: { name: msvc-config } }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: payment }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: payment } }
+  template:
+    metadata: { labels: { app: payment } }
+    spec:
+      containers:
+        - name: payment
+          image: REGISTRY/msvc-payment:latest
+          envFrom: [{ configMapRef: { name: msvc-config } }]

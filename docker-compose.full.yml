@@ -1,0 +1,33 @@
+# Run EVERYTHING in containers (Kafka + all 5 services).
+#   docker compose -f docker-compose.yml -f docker-compose.full.yml up -d --build
+# The base docker-compose.yml provides kafka + kafka-ui; this file adds the services.
+# Services reach the broker on the INTERNAL listener (kafka:9094).
+services:
+  gateway:
+    build: { context: ., args: { APP: gateway } }
+    environment:
+      KAFKA_BROKER: kafka:9094
+      PORT: '3000'
+    ports:
+      - '3000:3000'
+    depends_on: [kafka]
+
+  products:
+    build: { context: ., args: { APP: products } }
+    environment: { KAFKA_BROKER: kafka:9094 }
+    depends_on: [kafka]
+
+  orders:
+    build: { context: ., args: { APP: orders } }
+    environment: { KAFKA_BROKER: kafka:9094 }
+    depends_on: [kafka]
+
+  inventory:
+    build: { context: ., args: { APP: inventory } }
+    environment: { KAFKA_BROKER: kafka:9094 }
+    depends_on: [kafka]
+
+  payment:
+    build: { context: ., args: { APP: payment } }
+    environment: { KAFKA_BROKER: kafka:9094 }
+    depends_on: [kafka]

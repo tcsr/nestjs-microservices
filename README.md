@@ -91,6 +91,18 @@ Real-time: connect a Socket.IO client to `http://localhost:3000`, listen for
 | [notes/observability-deployment.md](docs/notes/observability-deployment.md) | correlation ids, tracing, logging, metrics, health, containers, k8s, scaling, config, security |
 | [architecture/microservices-tradeoffs.md](docs/architecture/microservices-tradeoffs.md) | the trade-off table, anti-patterns, when NOT to use microservices |
 
+## Ops
+- **Tests**: `npm test` — saga-logic unit tests (inventory/payment/orders) + a
+  contract test on the event envelope (no broker needed). `npm run typecheck` for
+  the whole monorepo.
+- **CI**: `.github/workflows/ci.yml` — typecheck + build all 5 + tests on push.
+- **Docker (per service)**: parameterized `Dockerfile`:
+  `docker build --build-arg APP=orders -t msvc-orders .`
+- **Docker (everything)**: `docker compose -f docker-compose.yml -f docker-compose.full.yml up -d --build`
+  runs Kafka + all 5 services containerized (services use the internal `kafka:9094`).
+- **Kubernetes**: `k8s/services.yaml` — a Deployment per service, Service + HPA for
+  the gateway, shared config via ConfigMap (illustrative; needs a cluster + Kafka).
+
 ## Note
 This is a learning system: services use **in-memory** stores (database-per-service
 is documented; each would own a real DB in production). Focus is the **messaging,
