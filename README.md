@@ -58,7 +58,9 @@ the versioned boundary between services.
 ```bash
 npm install
 docker compose up -d        # Kafka (KRaft) + Kafka UI at http://localhost:8080
-npm run start:all           # all 5 services (watch mode)
+npm run build               # build all 5 services
+npm run start:prod:all      # run all 5 from dist (reliable)
+# (npm run start:all runs 5 watch compilers — handy but heavy; prefer build + start:prod:all)
 
 # place an order:
 curl -X POST http://localhost:3000/checkout -H "Content-Type: application/json" \

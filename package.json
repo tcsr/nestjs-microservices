@@ -19,6 +19,7 @@
     "start:inventory": "nest start inventory --watch",
     "start:payment": "nest start payment --watch",
     "start:all": "concurrently -n gateway,products,orders,inventory,payment -c cyan,green,yellow,magenta,blue \"npm:start:gateway\" \"npm:start:products\" \"npm:start:orders\" \"npm:start:inventory\" \"npm:start:payment\"",
+    "start:prod:all": "concurrently -n gateway,products,orders,inventory,payment -c cyan,green,yellow,magenta,blue \"node dist/apps/gateway/main\" \"node dist/apps/products/main\" \"node dist/apps/orders/main\" \"node dist/apps/inventory/main\" \"node dist/apps/payment/main\"",
     "test": "vitest run"
   },
   "dependencies": {
